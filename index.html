@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大吉國中二年四班 - 學生請假系統</title>
+    <title>大吉國中二年四班 - 學生請假系統 (進階版)</title>
     <style>
         body {
             font-family: "Microsoft JhengHei", Arial, sans-serif;
@@ -13,7 +13,7 @@
             color: #333;
         }
         .container {
-            max-width: 800px;
+            max-width: 900px; /* 加寬一點以容納篩選器 */
             margin: 0 auto;
             background: white;
             padding: 30px;
@@ -36,18 +36,28 @@
         .form-group {
             margin-bottom: 15px;
         }
+        /* 日期範圍樣式 */
+        .date-range-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .date-range-group input {
+            flex: 1;
+        }
+        
         label {
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
         }
-        select, input[type="date"], textarea {
+        select, input[type="date"], textarea, input[type="text"] {
             width: 100%;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 16px;
-            box-sizing: border-box; /* 確保 padding 不會撐開寬度 */
+            box-sizing: border-box;
         }
         .radio-group {
             display: flex;
@@ -79,6 +89,27 @@
             background-color: #218838;
         }
         
+        /* 篩選區塊樣式 */
+        .filter-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .filter-item {
+            flex: 1;
+            min-width: 150px;
+        }
+        .filter-item label {
+            font-size: 0.9em;
+            color: #666;
+        }
+
         /* 表格樣式 */
         table {
             width: 100%;
@@ -89,28 +120,46 @@
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #ddd;
+            vertical-align: middle;
         }
         th {
             background-color: #f8f9fa;
             font-weight: bold;
+            white-space: nowrap; /* 標題也不換行 */
         }
         tr:hover {
             background-color: #f1f1f1;
+        }
+        /* 強制不換行的欄位 */
+        .col-nowrap {
+            white-space: nowrap;
+            width: 1%; /* 讓欄位縮到最小內容寬度 */
         }
         .tag {
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 0.9em;
             color: white;
+            display: inline-block;
         }
-        .tag-sick { background-color: #dc3545; } /* 病假 - 紅 */
-        .tag-personal { background-color: #ffc107; color: #333; } /* 事假 - 黃 */
-        .tag-other { background-color: #17a2b8; } /* 其他 - 藍 */
+        .tag-sick { background-color: #dc3545; }
+        .tag-personal { background-color: #ffc107; color: #333; }
+        .tag-other { background-color: #17a2b8; }
 
         #loading {
             text-align: center;
             color: #666;
+            font-weight: bold;
+            padding: 20px;
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 5px;
             display: none;
+        }
+        .error-msg {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
         }
     </style>
 </head>
@@ -124,15 +173,19 @@
 
     <div class="form-section">
         <div class="form-group">
-            <label for="dateInput">請假日期：</label>
-            <input type="date" id="dateInput">
+            <label>請假日期範圍 (從 ~ 到)：</label>
+            <div class="date-range-group">
+                <input type="date" id="startDateInput" title="開始日期">
+                <span>至</span>
+                <input type="date" id="endDateInput" title="結束日期">
+            </div>
         </div>
 
         <div class="form-group">
             <label for="studentSelect">學生姓名 (座號)：</label>
             <select id="studentSelect">
                 <option value="" disabled selected>請選擇學生...</option>
-                </select>
+            </select>
         </div>
 
         <div class="form-group">
@@ -154,14 +207,33 @@
 
     <hr>
 
-    <h2>最近請假紀錄</h2>
-    <p id="loading">載入中...</p>
+    <h2>請假紀錄查詢</h2>
+    
+    <div class="filter-section">
+        <div class="filter-item">
+            <label>篩選日期：</label>
+            <input type="date" id="filterDate">
+        </div>
+        <div class="filter-item">
+            <label>篩選學生：</label>
+            <select id="filterStudent">
+                <option value="all">顯示全部學生</option>
+            </select>
+        </div>
+        <div class="filter-item" style="flex: 0 0 auto;">
+            <label>&nbsp;</label>
+            <button id="clearFilterBtn" style="padding: 10px; background-color: #6c757d; font-size: 16px;">清除篩選</button>
+        </div>
+    </div>
+
+    <div id="loading">系統連線中...</div>
+    
     <table>
         <thead>
             <tr>
-                <th>日期</th>
-                <th>座號/姓名</th>
-                <th>假別</th>
+                <th class="col-nowrap">日期</th>
+                <th class="col-nowrap">座號/姓名</th>
+                <th class="col-nowrap">假別</th>
                 <th>備註</th>
             </tr>
         </thead>
@@ -171,11 +243,10 @@
 </div>
 
 <script type="module">
-    // 1. 引入必要的 Firebase 函式
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // 2. Firebase 設定
+    // Firebase 設定
     const firebaseConfig = {
         apiKey: "AIzaSyAqF1hG0sremcs0B1iFacitUrQbmdpaEv8",
         authDomain: "leave-9cf03.firebaseapp.com",
@@ -186,129 +257,185 @@
         measurementId: "G-F7HDQZ69ZK"
     };
 
-    // 3. 初始化 Firebase
+    // 初始化 Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const LEAVE_COLLECTION = "class_204_leaves"; // 資料庫集合名稱
+    const LEAVE_COLLECTION = "class_204_leaves";
 
-    // 4. 學生資料
+    // 學生資料
     const students = [
-        { id: 1, name: "何睿信" },
-        { id: 2, name: "陳柏翰" },
-        { id: 3, name: "黃明璿" },
-        { id: 4, name: "黃則善" },
-        { id: 5, name: "黃暐翰" },
-        { id: 6, name: "劉栢睿" },
-        { id: 7, name: "林芊惠" },
-        { id: 8, name: "段孟涵" },
-        { id: 9, name: "洪煜晴" },
-        { id: 10, name: "張育慈" },
-        { id: 11, name: "許令霏" },
-        { id: 12, name: "廖以晨" },
+        { id: 1, name: "何睿信" }, { id: 2, name: "陳柏翰" }, { id: 3, name: "黃明璿" },
+        { id: 4, name: "黃則善" }, { id: 5, name: "黃暐翰" }, { id: 6, name: "劉栢睿" },
+        { id: 7, name: "林芊惠" }, { id: 8, name: "段孟涵" }, { id: 9, name: "洪煜晴" },
+        { id: 10, name: "張育慈" }, { id: 11, name: "許令霏" }, { id: 12, name: "廖以晨" },
         { id: 13, name: "劉晏妤" }
     ];
 
-    // 5. 初始化頁面
+    // DOM 元素
     const studentSelect = document.getElementById('studentSelect');
-    const dateInput = document.getElementById('dateInput');
+    const startDateInput = document.getElementById('startDateInput');
+    const endDateInput = document.getElementById('endDateInput');
     const submitBtn = document.getElementById('submitBtn');
     const noteInput = document.getElementById('noteInput');
     const tableBody = document.getElementById('recordTableBody');
     const loadingMsg = document.getElementById('loading');
 
-    // 設定預設日期為今天
-    dateInput.valueAsDate = new Date();
+    // 篩選 DOM
+    const filterDate = document.getElementById('filterDate');
+    const filterStudent = document.getElementById('filterStudent');
+    const clearFilterBtn = document.getElementById('clearFilterBtn');
 
-    // 填入學生選項
+    // 本地資料暫存 (用於篩選)
+    let allLeaveData = [];
+
+    // 1. 初始化表單與下拉選單
+    const today = new Date().toISOString().split('T')[0];
+    startDateInput.value = today;
+    endDateInput.value = today;
+
+    // 填入「輸入表單」與「篩選表單」的學生選項
     students.forEach(s => {
+        // 輸入用
         const option = document.createElement('option');
-        option.value = s.id; // 儲存時存座號
+        option.value = s.id;
         option.textContent = `${s.id}號 - ${s.name}`;
         studentSelect.appendChild(option);
+
+        // 篩選用
+        const filterOption = document.createElement('option');
+        filterOption.value = s.id;
+        filterOption.textContent = `${s.id}號 - ${s.name}`;
+        filterStudent.appendChild(filterOption);
     });
 
-    // 6. 送出資料功能
+    // 2. 儲存功能 (支援日期範圍)
     submitBtn.addEventListener('click', async () => {
         const studentId = studentSelect.value;
-        const date = dateInput.value;
+        const startStr = startDateInput.value;
+        const endStr = endDateInput.value;
         const note = noteInput.value.trim();
-        // 取得選中的假別
         const leaveType = document.querySelector('input[name="leaveType"]:checked').value;
 
-        // 驗證輸入
-        if (!studentId) {
-            alert("請選擇學生！");
-            return;
-        }
-        if (!date) {
-            alert("請選擇日期！");
+        if (!studentId || !startStr || !endStr) {
+            alert("請選擇學生和日期範圍！");
             return;
         }
 
-        // 找到學生姓名
+        if (startStr > endStr) {
+            alert("開始日期不能晚於結束日期！");
+            return;
+        }
+
         const studentObj = students.find(s => s.id == studentId);
-
-        // 鎖定按鈕避免重複發送
         submitBtn.disabled = true;
         submitBtn.textContent = "儲存中...";
 
         try {
-            await addDoc(collection(db, LEAVE_COLLECTION), {
-                date: date,
-                studentId: parseInt(studentId),
-                studentName: studentObj.name,
-                leaveType: leaveType,
-                note: note,
-                createdAt: serverTimestamp() // 紀錄建立時間，方便排序
-            });
+            // 計算日期範圍並準備批次寫入
+            const promises = [];
+            let currentDate = new Date(startStr);
+            const endDate = new Date(endStr);
 
-            alert("儲存成功！");
-            // 清空備註，學生和日期通常不用清空，方便連續輸入
-            noteInput.value = "";
+            while (currentDate <= endDate) {
+                const dateString = currentDate.toISOString().split('T')[0];
+                
+                // 建立每一天的請假單
+                const docPromise = addDoc(collection(db, LEAVE_COLLECTION), {
+                    date: dateString,
+                    studentId: parseInt(studentId),
+                    studentName: studentObj.name,
+                    leaveType: leaveType,
+                    note: note,
+                    createdAt: serverTimestamp()
+                });
+                promises.push(docPromise);
+
+                // 加一天
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            // 等待所有日期都寫入完成
+            await Promise.all(promises);
+
+            alert(`儲存成功！已建立 ${promises.length} 筆請假紀錄。`);
+            noteInput.value = ""; // 清空備註
         } catch (e) {
-            console.error("Error adding document: ", e);
-            alert("儲存失敗，請檢查網路或 Firebase 設定。\n錯誤訊息：" + e.message);
+            console.error("儲存失敗:", e);
+            alert("儲存失敗！錯誤：" + e.message);
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = "送出資料";
         }
     });
 
-    // 7. 即時監聽資料庫變化並顯示 (Read)
-    const q = query(collection(db, LEAVE_COLLECTION), orderBy("date", "desc"), orderBy("createdAt", "desc"));
-    
+    // 3. 讀取與篩選功能
     loadingMsg.style.display = "block";
-    
+    const q = query(collection(db, LEAVE_COLLECTION), orderBy("date", "desc"));
+
+    // 即時監聽資料庫
     onSnapshot(q, (querySnapshot) => {
-        tableBody.innerHTML = ""; // 清空表格
         loadingMsg.style.display = "none";
+        allLeaveData = []; // 清空暫存
+
+        querySnapshot.forEach((doc) => {
+            allLeaveData.push(doc.data());
+        });
+
+        // 每次資料更新時，重新渲染表格 (會自動套用目前的篩選條件)
+        renderTable();
+
+    }, (error) => {
+        console.error("Firebase Error:", error);
+        loadingMsg.style.display = "block";
+        loadingMsg.classList.add("error-msg");
+        loadingMsg.innerHTML = "⚠️ 無法載入資料<br>錯誤代碼：" + error.code;
+    });
+
+    // 渲染表格函式 (包含篩選邏輯)
+    function renderTable() {
+        tableBody.innerHTML = "";
         
-        if (querySnapshot.empty) {
-            tableBody.innerHTML = "<tr><td colspan='4' style='text-align:center'>目前沒有請假紀錄</td></tr>";
+        const targetDate = filterDate.value;
+        const targetStudentId = filterStudent.value;
+
+        // 執行篩選
+        const filteredData = allLeaveData.filter(item => {
+            const dateMatch = targetDate ? item.date === targetDate : true;
+            const studentMatch = targetStudentId !== "all" ? item.studentId == targetStudentId : true;
+            return dateMatch && studentMatch;
+        });
+
+        if (filteredData.length === 0) {
+            tableBody.innerHTML = "<tr><td colspan='4' style='text-align:center; color: #666;'>沒有符合的紀錄</td></tr>";
             return;
         }
 
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            
-            // 決定標籤顏色
+        filteredData.forEach(data => {
             let tagClass = "tag-other";
             if (data.leaveType === "病假") tagClass = "tag-sick";
             else if (data.leaveType === "事假") tagClass = "tag-personal";
 
             const row = `
                 <tr>
-                    <td>${data.date}</td>
-                    <td>${data.studentId}號 ${data.studentName}</td>
-                    <td><span class="tag ${tagClass}">${data.leaveType}</span></td>
+                    <td class="col-nowrap">${data.date}</td>
+                    <td class="col-nowrap">${data.studentId}號 ${data.studentName}</td>
+                    <td class="col-nowrap"><span class="tag ${tagClass}">${data.leaveType}</span></td>
                     <td>${data.note || "<span style='color:#999'>無</span>"}</td>
                 </tr>
             `;
             tableBody.innerHTML += row;
         });
-    }, (error) => {
-        console.error("監聽失敗:", error);
-        loadingMsg.textContent = "無法載入資料 (請檢查 Firebase 權限)";
+    }
+
+    // 綁定篩選事件 (變更時自動刷新)
+    filterDate.addEventListener('change', renderTable);
+    filterStudent.addEventListener('change', renderTable);
+
+    // 清除篩選按鈕
+    clearFilterBtn.addEventListener('click', () => {
+        filterDate.value = "";
+        filterStudent.value = "all";
+        renderTable();
     });
 
 </script>
