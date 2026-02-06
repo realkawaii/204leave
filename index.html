@@ -2,98 +2,110 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大吉國中二年四班 - 學生請假系統 (進階版)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>大吉國中二年四班 - 請假系統 (手機優化版)</title>
     <style>
+        /* --- 全局基礎設定 --- */
         body {
             font-family: "Microsoft JhengHei", Arial, sans-serif;
             background-color: #f4f7f6;
             margin: 0;
-            padding: 20px;
+            padding: 10px; /* 手機版邊距縮小 */
             color: #333;
         }
         .container {
-            max-width: 900px; /* 加寬一點以容納篩選器 */
+            max-width: 900px;
             margin: 0 auto;
             background: white;
-            padding: 30px;
+            padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        h1, h2 {
+        h1 {
             text-align: center;
             color: #2c3e50;
+            font-size: 1.5rem; /* 手機版標題不要太大 */
+            margin-bottom: 10px;
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 1.3rem;
+            margin-top: 25px;
         }
         .info-box {
             background-color: #e8f4fd;
-            padding: 15px;
+            padding: 10px;
             border-radius: 5px;
             margin-bottom: 20px;
             text-align: center;
             font-weight: bold;
             color: #0d47a1;
+            font-size: 0.9rem;
         }
-        .form-group {
-            margin-bottom: 15px;
+
+        /* --- 表單元件樣式 --- */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        
+        select, input[type="date"], textarea, input[type="text"] {
+            width: 100%;
+            padding: 12px; /* 加大點擊範圍 */
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px; /* 防止 iOS 自動縮放 */
+            box-sizing: border-box;
+            background-color: #fff;
         }
-        /* 日期範圍樣式 */
+
+        /* 日期範圍群組 */
         .date-range-group {
             display: flex;
             gap: 10px;
             align-items: center;
         }
-        .date-range-group input {
-            flex: 1;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        select, input[type="date"], textarea, input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
+        .date-range-group span { flex: 0 0 auto; }
+
+        /* Radio 按鈕群組 */
         .radio-group {
             display: flex;
-            gap: 20px;
+            gap: 15px;
             padding: 5px 0;
+            flex-wrap: wrap; /* 手機版若太窄可換行 */
         }
         .radio-group label {
             font-weight: normal;
             display: flex;
             align-items: center;
             cursor: pointer;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 20px;
+            border: 1px solid #ddd;
         }
-        input[type="radio"] {
-            margin-right: 5px;
-            transform: scale(1.2);
-        }
+        .radio-group label:active { background: #e2e6ea; }
+        input[type="radio"] { margin-right: 8px; transform: scale(1.2); }
+
+        /* 按鈕樣式 */
         button {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             background-color: #28a745;
             color: white;
             border: none;
             border-radius: 5px;
             font-size: 18px;
             cursor: pointer;
-            transition: background 0.3s;
+            font-weight: bold;
+            touch-action: manipulation; /* 優化觸控 */
         }
-        button:hover {
-            background-color: #218838;
-        }
-        
-        /* 篩選區塊樣式 */
+        button:hover { background-color: #218838; }
+
+        /* 篩選區塊 */
         .filter-section {
             background-color: #f8f9fa;
             padding: 15px;
-            border-radius: 5px;
+            border-radius: 8px;
             margin-bottom: 15px;
             border: 1px solid #e9ecef;
             display: flex;
@@ -101,40 +113,9 @@
             flex-wrap: wrap;
             align-items: flex-end;
         }
-        .filter-item {
-            flex: 1;
-            min-width: 150px;
-        }
-        .filter-item label {
-            font-size: 0.9em;
-            color: #666;
-        }
-
-        /* 表格樣式 */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-            vertical-align: middle;
-        }
-        th {
-            background-color: #f8f9fa;
-            font-weight: bold;
-            white-space: nowrap; /* 標題也不換行 */
-        }
-        tr:hover {
-            background-color: #f1f1f1;
-        }
-        /* 強制不換行的欄位 */
-        .col-nowrap {
-            white-space: nowrap;
-            width: 1%; /* 讓欄位縮到最小內容寬度 */
-        }
+        .filter-item { flex: 1; min-width: 150px; }
+        
+        /* 標籤樣式 */
         .tag {
             padding: 4px 8px;
             border-radius: 4px;
@@ -146,20 +127,99 @@
         .tag-personal { background-color: #ffc107; color: #333; }
         .tag-other { background-color: #17a2b8; }
 
+        /* 讀取與錯誤訊息 */
         #loading {
             text-align: center;
             color: #666;
-            font-weight: bold;
-            padding: 20px;
+            padding: 15px;
             background: #fff3cd;
-            border: 1px solid #ffeeba;
             border-radius: 5px;
             display: none;
         }
         .error-msg {
             color: #721c24;
             background-color: #f8d7da;
-            border-color: #f5c6cb;
+        }
+
+        /* --- 表格基礎樣式 (電腦版) --- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th { background-color: #f8f9fa; font-weight: bold; white-space: nowrap; }
+        
+        /* --- RWD 手機版優化核心代碼 --- */
+        @media screen and (max-width: 768px) {
+            /* 調整容器 */
+            .container { padding: 15px; }
+            body { padding: 5px; background: #eee; }
+
+            /* 1. 輸入區塊堆疊 */
+            .date-range-group { flex-direction: column; align-items: stretch; }
+            .date-range-group span { text-align: center; display: none; /* 省略'至'字，節省空間 */ }
+            
+            .filter-section { flex-direction: column; gap: 10px; }
+            .filter-item { width: 100%; }
+            #clearFilterBtn { width: 100%; margin-top: 5px; }
+
+            /* 2. 表格變卡片 (Card View) */
+            table, thead, tbody, th, td, tr { 
+                display: block; 
+            }
+            
+            /* 隱藏原本的表頭 */
+            thead { display: none; }
+            
+            tr { 
+                margin-bottom: 15px; 
+                background: white;
+                border-radius: 10px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+                border: 1px solid #fff;
+                overflow: hidden;
+            }
+            
+            td { 
+                border: none;
+                border-bottom: 1px solid #f0f0f0; 
+                position: relative;
+                padding-left: 35%; /* 預留左側標題空間 */
+                padding-top: 10px;
+                padding-bottom: 10px;
+                text-align: left;
+            }
+            
+            td:last-child { border-bottom: none; }
+
+            /* 使用 data-label 屬性顯示欄位名稱 */
+            td::before { 
+                content: attr(data-label); 
+                position: absolute;
+                left: 15px;
+                width: 30%; 
+                padding-right: 10px; 
+                white-space: nowrap;
+                font-weight: bold;
+                color: #666;
+            }
+            
+            /* 針對不同欄位的微調 */
+            td[data-label="備註"] {
+                display: block;
+                padding-left: 15px;
+            }
+            td[data-label="備註"]::before {
+                position: static; /* 備註標題不浮動 */
+                display: block;
+                margin-bottom: 5px;
+                color: #28a745;
+            }
         }
     </style>
 </head>
@@ -175,9 +235,9 @@
         <div class="form-group">
             <label>請假日期範圍 (從 ~ 到)：</label>
             <div class="date-range-group">
-                <input type="date" id="startDateInput" title="開始日期">
+                <input type="date" id="startDateInput" placeholder="開始日期">
                 <span>至</span>
-                <input type="date" id="endDateInput" title="結束日期">
+                <input type="date" id="endDateInput" placeholder="結束日期">
             </div>
         </div>
 
@@ -222,7 +282,7 @@
         </div>
         <div class="filter-item" style="flex: 0 0 auto;">
             <label>&nbsp;</label>
-            <button id="clearFilterBtn" style="padding: 10px; background-color: #6c757d; font-size: 16px;">清除篩選</button>
+            <button id="clearFilterBtn" style="background-color: #6c757d;">清除篩選</button>
         </div>
     </div>
 
@@ -231,9 +291,9 @@
     <table>
         <thead>
             <tr>
-                <th class="col-nowrap">日期</th>
-                <th class="col-nowrap">座號/姓名</th>
-                <th class="col-nowrap">假別</th>
+                <th width="20%">日期</th>
+                <th width="25%">座號/姓名</th>
+                <th width="15%">假別</th>
                 <th>備註</th>
             </tr>
         </thead>
@@ -257,12 +317,10 @@
         measurementId: "G-F7HDQZ69ZK"
     };
 
-    // 初始化 Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const LEAVE_COLLECTION = "class_204_leaves";
 
-    // 學生資料
     const students = [
         { id: 1, name: "何睿信" }, { id: 2, name: "陳柏翰" }, { id: 3, name: "黃明璿" },
         { id: 4, name: "黃則善" }, { id: 5, name: "黃暐翰" }, { id: 6, name: "劉栢睿" },
@@ -271,7 +329,6 @@
         { id: 13, name: "劉晏妤" }
     ];
 
-    // DOM 元素
     const studentSelect = document.getElementById('studentSelect');
     const startDateInput = document.getElementById('startDateInput');
     const endDateInput = document.getElementById('endDateInput');
@@ -279,36 +336,27 @@
     const noteInput = document.getElementById('noteInput');
     const tableBody = document.getElementById('recordTableBody');
     const loadingMsg = document.getElementById('loading');
-
-    // 篩選 DOM
     const filterDate = document.getElementById('filterDate');
     const filterStudent = document.getElementById('filterStudent');
     const clearFilterBtn = document.getElementById('clearFilterBtn');
 
-    // 本地資料暫存 (用於篩選)
     let allLeaveData = [];
-
-    // 1. 初始化表單與下拉選單
     const today = new Date().toISOString().split('T')[0];
     startDateInput.value = today;
     endDateInput.value = today;
 
-    // 填入「輸入表單」與「篩選表單」的學生選項
     students.forEach(s => {
-        // 輸入用
         const option = document.createElement('option');
         option.value = s.id;
         option.textContent = `${s.id}號 - ${s.name}`;
         studentSelect.appendChild(option);
 
-        // 篩選用
         const filterOption = document.createElement('option');
         filterOption.value = s.id;
         filterOption.textContent = `${s.id}號 - ${s.name}`;
         filterStudent.appendChild(filterOption);
     });
 
-    // 2. 儲存功能 (支援日期範圍)
     submitBtn.addEventListener('click', async () => {
         const studentId = studentSelect.value;
         const startStr = startDateInput.value;
@@ -320,7 +368,6 @@
             alert("請選擇學生和日期範圍！");
             return;
         }
-
         if (startStr > endStr) {
             alert("開始日期不能晚於結束日期！");
             return;
@@ -331,15 +378,12 @@
         submitBtn.textContent = "儲存中...";
 
         try {
-            // 計算日期範圍並準備批次寫入
             const promises = [];
             let currentDate = new Date(startStr);
             const endDate = new Date(endStr);
 
             while (currentDate <= endDate) {
                 const dateString = currentDate.toISOString().split('T')[0];
-                
-                // 建立每一天的請假單
                 const docPromise = addDoc(collection(db, LEAVE_COLLECTION), {
                     date: dateString,
                     studentId: parseInt(studentId),
@@ -349,56 +393,42 @@
                     createdAt: serverTimestamp()
                 });
                 promises.push(docPromise);
-
-                // 加一天
                 currentDate.setDate(currentDate.getDate() + 1);
             }
-
-            // 等待所有日期都寫入完成
             await Promise.all(promises);
-
             alert(`儲存成功！已建立 ${promises.length} 筆請假紀錄。`);
-            noteInput.value = ""; // 清空備註
+            noteInput.value = "";
         } catch (e) {
-            console.error("儲存失敗:", e);
-            alert("儲存失敗！錯誤：" + e.message);
+            console.error(e);
+            alert("儲存失敗！" + e.message);
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = "送出資料";
         }
     });
 
-    // 3. 讀取與篩選功能
     loadingMsg.style.display = "block";
     const q = query(collection(db, LEAVE_COLLECTION), orderBy("date", "desc"));
 
-    // 即時監聽資料庫
     onSnapshot(q, (querySnapshot) => {
         loadingMsg.style.display = "none";
-        allLeaveData = []; // 清空暫存
-
+        allLeaveData = [];
         querySnapshot.forEach((doc) => {
             allLeaveData.push(doc.data());
         });
-
-        // 每次資料更新時，重新渲染表格 (會自動套用目前的篩選條件)
         renderTable();
-
     }, (error) => {
-        console.error("Firebase Error:", error);
+        console.error(error);
         loadingMsg.style.display = "block";
         loadingMsg.classList.add("error-msg");
-        loadingMsg.innerHTML = "⚠️ 無法載入資料<br>錯誤代碼：" + error.code;
+        loadingMsg.innerHTML = "⚠️ 無法載入資料 (請檢查 Firebase 權限)";
     });
 
-    // 渲染表格函式 (包含篩選邏輯)
     function renderTable() {
         tableBody.innerHTML = "";
-        
         const targetDate = filterDate.value;
         const targetStudentId = filterStudent.value;
 
-        // 執行篩選
         const filteredData = allLeaveData.filter(item => {
             const dateMatch = targetDate ? item.date === targetDate : true;
             const studentMatch = targetStudentId !== "all" ? item.studentId == targetStudentId : true;
@@ -415,23 +445,21 @@
             if (data.leaveType === "病假") tagClass = "tag-sick";
             else if (data.leaveType === "事假") tagClass = "tag-personal";
 
+            // 注意：這裡加上了 data-label 屬性，這是手機版顯示標題的關鍵
             const row = `
                 <tr>
-                    <td class="col-nowrap">${data.date}</td>
-                    <td class="col-nowrap">${data.studentId}號 ${data.studentName}</td>
-                    <td class="col-nowrap"><span class="tag ${tagClass}">${data.leaveType}</span></td>
-                    <td>${data.note || "<span style='color:#999'>無</span>"}</td>
+                    <td data-label="日期">${data.date}</td>
+                    <td data-label="姓名">${data.studentId}號 ${data.studentName}</td>
+                    <td data-label="假別"><span class="tag ${tagClass}">${data.leaveType}</span></td>
+                    <td data-label="備註">${data.note || "<span style='color:#999'>無</span>"}</td>
                 </tr>
             `;
             tableBody.innerHTML += row;
         });
     }
 
-    // 綁定篩選事件 (變更時自動刷新)
     filterDate.addEventListener('change', renderTable);
     filterStudent.addEventListener('change', renderTable);
-
-    // 清除篩選按鈕
     clearFilterBtn.addEventListener('click', () => {
         filterDate.value = "";
         filterStudent.value = "all";
