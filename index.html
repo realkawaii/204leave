@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>大吉國中二年四班 - 請假系統 (手機優化版)</title>
+    <title>大吉國中二年四班 - 請假系統 (管理版)</title>
     <style>
         /* --- 全局基礎設定 --- */
         body {
             font-family: "Microsoft JhengHei", Arial, sans-serif;
             background-color: #f4f7f6;
             margin: 0;
-            padding: 10px; /* 手機版邊距縮小 */
+            padding: 10px;
             color: #333;
         }
         .container {
@@ -24,7 +24,7 @@
         h1 {
             text-align: center;
             color: #2c3e50;
-            font-size: 1.5rem; /* 手機版標題不要太大 */
+            font-size: 1.5rem;
             margin-bottom: 10px;
         }
         h2 {
@@ -50,15 +50,14 @@
         
         select, input[type="date"], textarea, input[type="text"] {
             width: 100%;
-            padding: 12px; /* 加大點擊範圍 */
+            padding: 12px;
             border: 1px solid #ccc;
             border-radius: 5px;
-            font-size: 16px; /* 防止 iOS 自動縮放 */
+            font-size: 16px;
             box-sizing: border-box;
             background-color: #fff;
         }
 
-        /* 日期範圍群組 */
         .date-range-group {
             display: flex;
             gap: 10px;
@@ -66,12 +65,11 @@
         }
         .date-range-group span { flex: 0 0 auto; }
 
-        /* Radio 按鈕群組 */
         .radio-group {
             display: flex;
             gap: 15px;
             padding: 5px 0;
-            flex-wrap: wrap; /* 手機版若太窄可換行 */
+            flex-wrap: wrap;
         }
         .radio-group label {
             font-weight: normal;
@@ -86,8 +84,8 @@
         .radio-group label:active { background: #e2e6ea; }
         input[type="radio"] { margin-right: 8px; transform: scale(1.2); }
 
-        /* 按鈕樣式 */
-        button {
+        /* 主要按鈕 */
+        button.primary-btn {
             width: 100%;
             padding: 14px;
             background-color: #28a745;
@@ -97,10 +95,26 @@
             font-size: 18px;
             cursor: pointer;
             font-weight: bold;
-            touch-action: manipulation; /* 優化觸控 */
+            touch-action: manipulation;
         }
-        button:hover { background-color: #218838; }
+        button.primary-btn:hover { background-color: #218838; }
 
+        /* 操作按鈕 (編輯/刪除) */
+        .action-btn-group {
+            display: flex;
+            gap: 5px;
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+        }
+        .btn-edit { background-color: #17a2b8; }
+        .btn-delete { background-color: #dc3545; }
+        
         /* 篩選區塊 */
         .filter-section {
             background-color: #f8f9fa;
@@ -114,8 +128,16 @@
             align-items: flex-end;
         }
         .filter-item { flex: 1; min-width: 150px; }
+        .btn-filter {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
         
-        /* 標籤樣式 */
         .tag {
             padding: 4px 8px;
             border-radius: 4px;
@@ -127,7 +149,6 @@
         .tag-personal { background-color: #ffc107; color: #333; }
         .tag-other { background-color: #17a2b8; }
 
-        /* 讀取與錯誤訊息 */
         #loading {
             text-align: center;
             color: #666;
@@ -141,7 +162,39 @@
             background-color: #f8d7da;
         }
 
-        /* --- 表格基礎樣式 (電腦版) --- */
+        /* --- 彈出編輯視窗 (Modal) --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* --- 表格基礎樣式 --- */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -154,26 +207,19 @@
         }
         th { background-color: #f8f9fa; font-weight: bold; white-space: nowrap; }
         
-        /* --- RWD 手機版優化核心代碼 --- */
+        /* --- RWD 手機版優化 --- */
         @media screen and (max-width: 768px) {
-            /* 調整容器 */
             .container { padding: 15px; }
             body { padding: 5px; background: #eee; }
 
-            /* 1. 輸入區塊堆疊 */
             .date-range-group { flex-direction: column; align-items: stretch; }
-            .date-range-group span { text-align: center; display: none; /* 省略'至'字，節省空間 */ }
+            .date-range-group span { display: none; }
             
             .filter-section { flex-direction: column; gap: 10px; }
             .filter-item { width: 100%; }
-            #clearFilterBtn { width: 100%; margin-top: 5px; }
 
-            /* 2. 表格變卡片 (Card View) */
-            table, thead, tbody, th, td, tr { 
-                display: block; 
-            }
-            
-            /* 隱藏原本的表頭 */
+            /* 表格變卡片 */
+            table, thead, tbody, th, td, tr { display: block; }
             thead { display: none; }
             
             tr { 
@@ -189,37 +235,38 @@
                 border: none;
                 border-bottom: 1px solid #f0f0f0; 
                 position: relative;
-                padding-left: 35%; /* 預留左側標題空間 */
+                padding-left: 35%; 
                 padding-top: 10px;
                 padding-bottom: 10px;
                 text-align: left;
+                min-height: 24px;
             }
             
             td:last-child { border-bottom: none; }
 
-            /* 使用 data-label 屬性顯示欄位名稱 */
             td::before { 
                 content: attr(data-label); 
                 position: absolute;
                 left: 15px;
                 width: 30%; 
-                padding-right: 10px; 
                 white-space: nowrap;
                 font-weight: bold;
                 color: #666;
             }
             
-            /* 針對不同欄位的微調 */
-            td[data-label="備註"] {
-                display: block;
-                padding-left: 15px;
+            /* 備註與操作欄位特別處理 */
+            td[data-label="備註"] { display: block; padding-left: 15px; }
+            td[data-label="備註"]::before { position: static; display: block; margin-bottom: 5px; color: #28a745; }
+
+            td[data-label="操作"] { 
+                display: flex; 
+                padding: 10px 15px; 
+                justify-content: flex-end; 
+                background: #fcfcfc;
             }
-            td[data-label="備註"]::before {
-                position: static; /* 備註標題不浮動 */
-                display: block;
-                margin-bottom: 5px;
-                color: #28a745;
-            }
+            td[data-label="操作"]::before { display: none; }
+            .action-btn-group { width: 100%; display: flex; gap: 10px; }
+            .btn-sm { flex: 1; padding: 10px; font-size: 16px; }
         }
     </style>
 </head>
@@ -262,7 +309,7 @@
             <textarea id="noteInput" rows="3" placeholder="例如：感冒發燒、家中急事..."></textarea>
         </div>
 
-        <button id="submitBtn">送出資料</button>
+        <button id="submitBtn" class="primary-btn">送出資料</button>
     </div>
 
     <hr>
@@ -282,7 +329,7 @@
         </div>
         <div class="filter-item" style="flex: 0 0 auto;">
             <label>&nbsp;</label>
-            <button id="clearFilterBtn" style="background-color: #6c757d;">清除篩選</button>
+            <button id="clearFilterBtn" class="btn-filter">清除篩選</button>
         </div>
     </div>
 
@@ -291,10 +338,11 @@
     <table>
         <thead>
             <tr>
-                <th width="20%">日期</th>
-                <th width="25%">座號/姓名</th>
+                <th width="18%">日期</th>
+                <th width="22%">座號/姓名</th>
                 <th width="15%">假別</th>
                 <th>備註</th>
+                <th width="15%">操作</th>
             </tr>
         </thead>
         <tbody id="recordTableBody">
@@ -302,9 +350,39 @@
     </table>
 </div>
 
+<div id="editModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">編輯請假資料</div>
+        <div class="form-group">
+            <label>日期：</label>
+            <input type="date" id="editDate">
+        </div>
+        <div class="form-group">
+            <label>學生：</label>
+            <select id="editStudent" disabled style="background:#eee;"></select>
+        </div>
+        <div class="form-group">
+            <label>假別：</label>
+            <select id="editLeaveType">
+                <option value="事假">事假</option>
+                <option value="病假">病假</option>
+                <option value="其他">其他</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>備註：</label>
+            <textarea id="editNote" rows="3"></textarea>
+        </div>
+        <div class="modal-footer">
+            <button onclick="window.closeEditModal()" style="background:#ccc; border:none; padding:10px; border-radius:5px; cursor:pointer;">取消</button>
+            <button id="saveEditBtn" style="background:#28a745; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">儲存變更</button>
+        </div>
+    </div>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     // Firebase 設定
     const firebaseConfig = {
@@ -329,6 +407,7 @@
         { id: 13, name: "劉晏妤" }
     ];
 
+    // DOM 元素
     const studentSelect = document.getElementById('studentSelect');
     const startDateInput = document.getElementById('startDateInput');
     const endDateInput = document.getElementById('endDateInput');
@@ -340,23 +419,42 @@
     const filterStudent = document.getElementById('filterStudent');
     const clearFilterBtn = document.getElementById('clearFilterBtn');
 
+    // 編輯相關 DOM
+    const editModal = document.getElementById('editModal');
+    const editDate = document.getElementById('editDate');
+    const editStudent = document.getElementById('editStudent');
+    const editLeaveType = document.getElementById('editLeaveType');
+    const editNote = document.getElementById('editNote');
+    const saveEditBtn = document.getElementById('saveEditBtn');
+    let currentEditId = null;
+
     let allLeaveData = [];
     const today = new Date().toISOString().split('T')[0];
     startDateInput.value = today;
     endDateInput.value = today;
 
+    // 初始化下拉選單 (包含主畫面與編輯畫面)
     students.forEach(s => {
+        // 主畫面選擇
         const option = document.createElement('option');
         option.value = s.id;
         option.textContent = `${s.id}號 - ${s.name}`;
         studentSelect.appendChild(option);
 
+        // 篩選用
         const filterOption = document.createElement('option');
         filterOption.value = s.id;
         filterOption.textContent = `${s.id}號 - ${s.name}`;
         filterStudent.appendChild(filterOption);
+
+        // 編輯畫面用
+        const editOption = document.createElement('option');
+        editOption.value = s.id;
+        editOption.textContent = `${s.id}號 - ${s.name}`;
+        editStudent.appendChild(editOption);
     });
 
+    // --- 儲存新增資料 ---
     submitBtn.addEventListener('click', async () => {
         const studentId = studentSelect.value;
         const startStr = startDateInput.value;
@@ -407,6 +505,7 @@
         }
     });
 
+    // --- 讀取資料 ---
     loadingMsg.style.display = "block";
     const q = query(collection(db, LEAVE_COLLECTION), orderBy("date", "desc"));
 
@@ -414,7 +513,8 @@
         loadingMsg.style.display = "none";
         allLeaveData = [];
         querySnapshot.forEach((doc) => {
-            allLeaveData.push(doc.data());
+            // 記得把文件 ID 也存進去，才能編輯刪除
+            allLeaveData.push({ id: doc.id, ...doc.data() });
         });
         renderTable();
     }, (error) => {
@@ -424,6 +524,7 @@
         loadingMsg.innerHTML = "⚠️ 無法載入資料 (請檢查 Firebase 權限)";
     });
 
+    // --- 渲染表格 ---
     function renderTable() {
         tableBody.innerHTML = "";
         const targetDate = filterDate.value;
@@ -436,7 +537,7 @@
         });
 
         if (filteredData.length === 0) {
-            tableBody.innerHTML = "<tr><td colspan='4' style='text-align:center; color: #666;'>沒有符合的紀錄</td></tr>";
+            tableBody.innerHTML = "<tr><td colspan='5' style='text-align:center; color: #666;'>沒有符合的紀錄</td></tr>";
             return;
         }
 
@@ -445,19 +546,81 @@
             if (data.leaveType === "病假") tagClass = "tag-sick";
             else if (data.leaveType === "事假") tagClass = "tag-personal";
 
-            // 注意：這裡加上了 data-label 屬性，這是手機版顯示標題的關鍵
             const row = `
                 <tr>
                     <td data-label="日期">${data.date}</td>
                     <td data-label="姓名">${data.studentId}號 ${data.studentName}</td>
                     <td data-label="假別"><span class="tag ${tagClass}">${data.leaveType}</span></td>
                     <td data-label="備註">${data.note || "<span style='color:#999'>無</span>"}</td>
+                    <td data-label="操作">
+                        <div class="action-btn-group">
+                            <button class="btn-sm btn-edit" onclick="window.openEdit('${data.id}')">編輯</button>
+                            <button class="btn-sm btn-delete" onclick="window.deleteData('${data.id}')">刪除</button>
+                        </div>
+                    </td>
                 </tr>
             `;
             tableBody.innerHTML += row;
         });
     }
 
+    // --- 全局函式 (掛載到 window 以便 HTML onclick 使用) ---
+
+    // 1. 刪除資料
+    window.deleteData = async (id) => {
+        if (confirm("確定要刪除這筆請假紀錄嗎？")) {
+            try {
+                await deleteDoc(doc(db, LEAVE_COLLECTION, id));
+                // onSnapshot 會自動更新畫面
+            } catch (e) {
+                alert("刪除失敗：" + e.message);
+            }
+        }
+    };
+
+    // 2. 開啟編輯視窗
+    window.openEdit = (id) => {
+        const data = allLeaveData.find(item => item.id === id);
+        if (!data) return;
+
+        currentEditId = id;
+        editDate.value = data.date;
+        editStudent.value = data.studentId;
+        editLeaveType.value = data.leaveType;
+        editNote.value = data.note || "";
+        
+        editModal.style.display = 'flex';
+    };
+
+    // 3. 關閉編輯視窗
+    window.closeEditModal = () => {
+        editModal.style.display = 'none';
+        currentEditId = null;
+    };
+
+    // 4. 儲存編輯
+    saveEditBtn.addEventListener('click', async () => {
+        if (!currentEditId) return;
+        
+        saveEditBtn.disabled = true;
+        saveEditBtn.textContent = "更新中...";
+
+        try {
+            await updateDoc(doc(db, LEAVE_COLLECTION, currentEditId), {
+                date: editDate.value,
+                leaveType: editLeaveType.value,
+                note: editNote.value.trim()
+            });
+            window.closeEditModal();
+        } catch (e) {
+            alert("更新失敗：" + e.message);
+        } finally {
+            saveEditBtn.disabled = false;
+            saveEditBtn.textContent = "儲存變更";
+        }
+    });
+
+    // 篩選監聽
     filterDate.addEventListener('change', renderTable);
     filterStudent.addEventListener('change', renderTable);
     clearFilterBtn.addEventListener('click', () => {
