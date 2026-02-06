@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大吉國中二年四班 - 學生請假系統</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .info-box {
+            background-color: #e8f4fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+            color: #0d47a1;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, input[type="date"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box; /* 確保 padding 不會撐開寬度 */
+        }
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            padding: 5px 0;
+        }
+        .radio-group label {
+            font-weight: normal;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        input[type="radio"] {
+            margin-right: 5px;
+            transform: scale(1.2);
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        
+        /* 表格樣式 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: white;
+        }
+        .tag-sick { background-color: #dc3545; } /* 病假 - 紅 */
+        .tag-personal { background-color: #ffc107; color: #333; } /* 事假 - 黃 */
+        .tag-other { background-color: #17a2b8; } /* 其他 - 藍 */
+
+        #loading {
+            text-align: center;
+            color: #666;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>大吉國中 請假登錄系統</h1>
+    <div class="info-box">
+        班級：二年四班 | 學期：114 學年度第二學期
+    </div>
+
+    <div class="form-section">
+        <div class="form-group">
+            <label for="dateInput">請假日期：</label>
+            <input type="date" id="dateInput">
+        </div>
+
+        <div class="form-group">
+            <label for="studentSelect">學生姓名 (座號)：</label>
+            <select id="studentSelect">
+                <option value="" disabled selected>請選擇學生...</option>
+                </select>
+        </div>
+
+        <div class="form-group">
+            <label>假別：</label>
+            <div class="radio-group">
+                <label><input type="radio" name="leaveType" value="事假" checked> 事假</label>
+                <label><input type="radio" name="leaveType" value="病假"> 病假</label>
+                <label><input type="radio" name="leaveType" value="其他"> 其他</label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="noteInput">具體狀況/備註：</label>
+            <textarea id="noteInput" rows="3" placeholder="例如：感冒發燒、家中急事..."></textarea>
+        </div>
+
+        <button id="submitBtn">送出資料</button>
+    </div>
+
+    <hr>
+
+    <h2>最近請假紀錄</h2>
+    <p id="loading">載入中...</p>
+    <table>
+        <thead>
+            <tr>
+                <th>日期</th>
+                <th>座號/姓名</th>
+                <th>假別</th>
+                <th>備註</th>
+            </tr>
+        </thead>
+        <tbody id="recordTableBody">
+            </tbody>
+    </table>
+</div>
+
+<script type="module">
+    // 1. 引入必要的 Firebase 函式
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // 2. Firebase 設定
+    const firebaseConfig = {
+        apiKey: "AIzaSyAqF1hG0sremcs0B1iFacitUrQbmdpaEv8",
+        authDomain: "leave-9cf03.firebaseapp.com",
+        projectId: "leave-9cf03",
+        storageBucket: "leave-9cf03.firebasestorage.app",
+        messagingSenderId: "661576334678",
+        appId: "1:661576334678:web:acecb38cedf213cda96af7",
+        measurementId: "G-F7HDQZ69ZK"
+    };
+
+    // 3. 初始化 Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const LEAVE_COLLECTION = "class_204_leaves"; // 資料庫集合名稱
+
+    // 4. 學生資料
+    const students = [
+        { id: 1, name: "何睿信" },
+        { id: 2, name: "陳柏翰" },
+        { id: 3, name: "黃明璿" },
+        { id: 4, name: "黃則善" },
+        { id: 5, name: "黃暐翰" },
+        { id: 6, name: "劉栢睿" },
+        { id: 7, name: "林芊惠" },
+        { id: 8, name: "段孟涵" },
+        { id: 9, name: "洪煜晴" },
+        { id: 10, name: "張育慈" },
+        { id: 11, name: "許令霏" },
+        { id: 12, name: "廖以晨" },
+        { id: 13, name: "劉晏妤" }
+    ];
+
+    // 5. 初始化頁面
+    const studentSelect = document.getElementById('studentSelect');
+    const dateInput = document.getElementById('dateInput');
+    const submitBtn = document.getElementById('submitBtn');
+    const noteInput = document.getElementById('noteInput');
+    const tableBody = document.getElementById('recordTableBody');
+    const loadingMsg = document.getElementById('loading');
+
+    // 設定預設日期為今天
+    dateInput.valueAsDate = new Date();
+
+    // 填入學生選項
+    students.forEach(s => {
+        const option = document.createElement('option');
+        option.value = s.id; // 儲存時存座號
+        option.textContent = `${s.id}號 - ${s.name}`;
+        studentSelect.appendChild(option);
+    });
+
+    // 6. 送出資料功能
+    submitBtn.addEventListener('click', async () => {
+        const studentId = studentSelect.value;
+        const date = dateInput.value;
+        const note = noteInput.value.trim();
+        // 取得選中的假別
+        const leaveType = document.querySelector('input[name="leaveType"]:checked').value;
+
+        // 驗證輸入
+        if (!studentId) {
+            alert("請選擇學生！");
+            return;
+        }
+        if (!date) {
+            alert("請選擇日期！");
+            return;
+        }
+
+        // 找到學生姓名
+        const studentObj = students.find(s => s.id == studentId);
+
+        // 鎖定按鈕避免重複發送
+        submitBtn.disabled = true;
+        submitBtn.textContent = "儲存中...";
+
+        try {
+            await addDoc(collection(db, LEAVE_COLLECTION), {
+                date: date,
+                studentId: parseInt(studentId),
+                studentName: studentObj.name,
+                leaveType: leaveType,
+                note: note,
+                createdAt: serverTimestamp() // 紀錄建立時間，方便排序
+            });
+
+            alert("儲存成功！");
+            // 清空備註，學生和日期通常不用清空，方便連續輸入
+            noteInput.value = "";
+        } catch (e) {
+            console.error("Error adding document: ", e);
+            alert("儲存失敗，請檢查網路或 Firebase 設定。\n錯誤訊息：" + e.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "送出資料";
+        }
+    });
+
+    // 7. 即時監聽資料庫變化並顯示 (Read)
+    const q = query(collection(db, LEAVE_COLLECTION), orderBy("date", "desc"), orderBy("createdAt", "desc"));
+    
+    loadingMsg.style.display = "block";
+    
+    onSnapshot(q, (querySnapshot) => {
+        tableBody.innerHTML = ""; // 清空表格
+        loadingMsg.style.display = "none";
+        
+        if (querySnapshot.empty) {
+            tableBody.innerHTML = "<tr><td colspan='4' style='text-align:center'>目前沒有請假紀錄</td></tr>";
+            return;
+        }
+
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            
+            // 決定標籤顏色
+            let tagClass = "tag-other";
+            if (data.leaveType === "病假") tagClass = "tag-sick";
+            else if (data.leaveType === "事假") tagClass = "tag-personal";
+
+            const row = `
+                <tr>
+                    <td>${data.date}</td>
+                    <td>${data.studentId}號 ${data.studentName}</td>
+                    <td><span class="tag ${tagClass}">${data.leaveType}</span></td>
+                    <td>${data.note || "<span style='color:#999'>無</span>"}</td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+    }, (error) => {
+        console.error("監聽失敗:", error);
+        loadingMsg.textContent = "無法載入資料 (請檢查 Firebase 權限)";
+    });
+
+</script>
+
+</body>
+</html>
